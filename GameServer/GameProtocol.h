@@ -1,13 +1,13 @@
 #pragma once
 #include "zinx.h"
 #include"GameChannel.h"
-
+#include"GameMsg.h"
 
 class GameChannel;
 class GameRole;
 
 
-class GameProtocol :	public Iprotocol
+class GameProtocol :public Iprotocol
 {
 public:
 

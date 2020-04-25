@@ -25,6 +25,13 @@ public:
 };
 #endif
 
+GameMsg *pmsg = new GameMsg;
+Iprotocol *pro = new GameProtocol;
+
+void test()
+{
+  ZinxKernel::Zinx_SendOut(*pmsg, *pro);
+}
 
 int main()
 {

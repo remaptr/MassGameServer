@@ -163,6 +163,9 @@ private:
 	virtual AZinxHandler *GetNextHandler(IZinxMsg &_oNextMsg);
 };
 
+
+
+
 /*通道类，派生自基础处理者类，提供基于系统调用的数据收发功能
 一般地，用户应该根据处理的文件（信息源）不同而创建通道类的子类或选用合适的实用类（已经提供的通道类子类）来完成系统级文件IO*/
 class Ichannel :public AZinxHandler {
@@ -252,7 +255,7 @@ public:
 	static void Zinx_Run();
 
 	/*向外发送数据，将参数1指定的用户数据通过参数2指定的协议对象发出*/
-	static void Zinx_SendOut(UserData &_oUserData, Iprotocol &_oProto);
+	static void Zinx_SendOut(UserData& _oUserData, Iprotocol& _oProto);
 
 	/*向外发送数据，将参数1指定的字节流通过参数2指定的通道发出*/
 	static void Zinx_SendOut(std::string &szBytes, Ichannel &_oChannel);

@@ -5,6 +5,9 @@
 
 
 
+class GameProtocol;
+class GameRole;
+
 
 class GameChannelFactory :public IZinxTcpConnFact
 {

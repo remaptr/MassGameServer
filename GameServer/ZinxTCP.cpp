@@ -66,6 +66,7 @@ bool ZinxTCPListen::ReadFd(std::string & _input)
 		auto poTcpDataChannel = m_ConnFac->CreateTcpDataChannel(iDataFd);
 		if (NULL != poTcpDataChannel)
 		{
+			// GameChannel的实例在这里添加到zinx框架上
 			bRet = ZinxKernel::Zinx_Add_Channel(*poTcpDataChannel);
 		}
 	}
@@ -133,14 +134,17 @@ bool ZinxTcpData::ReadFd(std::string & _input)
 	std::cout << "recv from : m_DataFd: "<< m_DataFd << "  " << Ichannel::Convert2Printable(_input) << std::endl;
 	std::cout << "<----------------------------------------->" << std::endl;
 
+	// 如果读到的字节数<=0,则执行这里
+	// 此时可以断开连接,下树并关闭通道对象.
 	if (false == bRet)
 	{
 		SetChannelClose();
 	}
-
 	return bRet;
-
 }
+
+
+
 
 bool ZinxTcpData::WriteFd(std::string & _output)
 {
@@ -157,6 +161,8 @@ bool ZinxTcpData::WriteFd(std::string & _output)
 	free(pOut);
 	return bRet;
 }
+
+
 
 void ZinxTcpData::Fini()
 {

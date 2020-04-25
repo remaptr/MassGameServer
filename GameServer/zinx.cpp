@@ -2,6 +2,8 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
+
+
 ZinxKernel::ZinxKernel()
 {
 	iEpollFd = epoll_create(1);
@@ -43,6 +45,7 @@ bool ZinxKernel::Add_Channel(Ichannel & _oChannel)
 void ZinxKernel::Del_Channel(Ichannel & _oChannel)
 {
 	m_ChannelList.remove(&_oChannel);
+	// 在此处下树
 	epoll_ctl(iEpollFd, EPOLL_CTL_DEL, _oChannel.GetFd(), NULL);
 	_oChannel.Fini();
 }
@@ -105,6 +108,7 @@ void ZinxKernel::Run()
 				poChannel->Handle(IoStat);
 				if (true == poChannel->ChannelNeedClose())
 				{
+					// 在此处调用下树函数
 					ZinxKernel::Del_Channel(*poChannel);
 					delete poChannel;
 					break;
@@ -216,7 +220,7 @@ void ZinxKernel::Zinx_Run()
 	poZinxKernel->Run();
 }
 
-void ZinxKernel::Zinx_SendOut(UserData & _oUserData, Iprotocol & _oProto)
+void ZinxKernel::Zinx_SendOut(UserData& _oUserData, Iprotocol & _oProto)
 {
 	SysIOReadyMsg iodic = SysIOReadyMsg(SysIOReadyMsg::OUT);
 	BytesMsg oBytes = BytesMsg(iodic);
@@ -225,6 +229,8 @@ void ZinxKernel::Zinx_SendOut(UserData & _oUserData, Iprotocol & _oProto)
 	oUserDataMsg.poUserData = &_oUserData;
 	_oProto.Handle(oUserDataMsg);
 }
+
+
 
 void ZinxKernel::Zinx_SendOut(std::string & szBytes, Ichannel & _oChannel)
 {
