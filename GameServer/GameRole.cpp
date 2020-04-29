@@ -1,52 +1,73 @@
-ï»¿#include "GameRole.h"
+#include "GameRole.h"
 
-int GameRole::smRoleCount = 0;
+int GameRole::smRoleCount = 1;
 std::default_random_engine g_rand_engine(time(nullptr));
 
+
+
+
+// Ëæ»ú³öÉúµã
 GameRole::GameRole()
 {
 	this->mPlayerId = smRoleCount;
-	//std::cout << this->mPlayerId << std::endl;
-	this->mPlayerName = "Player_" + std::to_string(smRoleCount);
 	smRoleCount++;
+	//this->mPlayerName = "Player_" + std::to_string(mPlayerId);
+	mPlayerName = RandomName::GetInstance().GetName();
 
-	//åˆå§‹ä½ç½®
+	//³õÊ¼Î»ÖÃ
 	x = 100 + (g_rand_engine() % 20);
 	y = 0;
 	z = 100 + (g_rand_engine() % 20);
 	v = 0;
 
-	//hp æ»¡è¡€æ˜¯1000
+	//hp ÂúÑªÊÇ1000
 	hp = 1000;
 
 }
 
 GameRole::~GameRole()
 {
+	// ¹é»¹Ãû×Ö
+	RandomName::GetInstance().ReleaseName(this->mPlayerName);
 }
 
 
-// è§’è‰²å±‚å¤„ç†å®Œæ¯•å,æŠŠæ¶ˆæ¯è¿”å›ç»™åè®®å±‚
+// ½ÇÉ«²ã´¦ÀíÍê±Ïºó,°ÑÏûÏ¢·µ»Ø¸øĞ­Òé²ã
 bool GameRole::Init()
 {
-	// æœåŠ¡å™¨å°†æ¶ˆæ¯è¿”å›ç»™åè®®å±‚
-	GameMsg* pMsg = MakeLogonSyncPid();
+	std::cout << "&&&&&&&&&&&&&&&&&&&&&&&&&11111111111111111111111111" << std::endl;
+	std::cout << "++++++++++++++++++++²âÊÔ´òÓ¡+++++++++++++++++++++" << std::endl;
+
+	// ·şÎñÆ÷½«ÏûÏ¢·µ»Ø¸øĞ­Òé²ã
+	auto pMsg = MakeLogonSyncPid();
 	ZinxKernel::Zinx_SendOut(*pMsg, *mProtocol);
 
-	// æœåŠ¡å™¨å°†å½“å‰ç©å®¶çš„å‡ºç”Ÿä½ç½®å‘é€ç»™å½“å‰ç©å®¶
+	// ·şÎñÆ÷½«µ±Ç°Íæ¼ÒµÄ³öÉúÎ»ÖÃ·¢ËÍ¸øµ±Ç°Íæ¼Ò
 	pMsg = MakeInitPosBroadcast();
 	ZinxKernel::Zinx_SendOut(*pMsg, *mProtocol);
 
+	// »ñÈ¡ÊÀ½ç1
+	mCurrentWorld = WorldManager::GetInstance().GetWorld(1);
 
-	// å½“å‰ç©å®¶æŠŠè‡ªå·±çš„å‡ºç”Ÿé€šçŸ¥å‘é€ç»™å…¶ä»–äºº,å¹¶å°†å…¶ä»–äººçš„å‡ºç”Ÿå‘ŠçŸ¥è‡ªå·±
-	auto players = ZinxKernel::Zinx_GetAllRole();
+	//½«µ±Ç°Íæ¼ÒÌí¼Óµ½ÓÎÏ·ÊÀ½çÖĞ
+	mCurrentWorld->AddPlayer(this);
+
+	// µ±Ç°Íæ¼Ò°Ñ×Ô¼ºµÄ³öÉúÍ¨Öª·¢ËÍ¸øÆäËûÈË,²¢½«ÆäËûÈËµÄ³öÉú¸æÖª×Ô¼º
+	//auto players = ZinxKernel::Zinx_GetAllRole();
+
+	// ·şÎñÆ÷½«ÖÜÎ§Íæ¼ÒµÄĞÅÏ¢Ò»´ÎĞÔ·¢ËÍ¸ø×Ô¼º
+	pMsg = MakeSurPlays();
+	ZinxKernel::Zinx_SendOut(*pMsg, *mProtocol);
+
+	//»ñÈ¡µ±Ç°ÓÎÏ·ÊÀ½çÖĞÖÜÎ§Íæ¼Ò
+	auto players = mCurrentWorld->GetSurPlayers(this);
 
 
-	// å¦‚æœæ˜¯ç¬¬ä¸€ä¸ªç©å®¶å‡ºç”Ÿ,é‚£ä¹ˆforå¾ªç¯ä¸­çš„è¯­å¥ä¸ä¼šè¢«æ‰§è¡Œ,
-	// ä½†æ˜¯æœ€åè¿˜æ˜¯è¿”å›true,ç¬¬ä¸€ä¸ªå¯¹è±¡è¢«åŠ å…¥åˆ°zinxçš„listä¸­
+	// Èç¹ûÊÇµÚÒ»¸öÍæ¼Ò³öÉú,ÄÇÃ´forÑ­»·ÖĞµÄÓï¾ä²»»á±»Ö´ĞĞ,
+	// µ«ÊÇ×îºó»¹ÊÇ·µ»Øtrue,µÚÒ»¸ö¶ÔÏó±»¼ÓÈëµ½zinxµÄlistÖĞ
 	for (auto &r : players)
 	{
-		// å®é™…ä¸Šè¿™ä¸€æ­¥ä¸ä¼šå‘ç”Ÿ,å› ä¸ºè§’è‰²å¿…é¡»åˆå§‹åŒ–å®Œæ¯•å,æ‰ä¼šåœ¨playersä¸­.
+		// Êµ¼ÊÉÏÕâÒ»²½²»»á·¢Éú,ÒòÎª½ÇÉ«±ØĞë³õÊ¼»¯Íê±Ïºó,²Å»áÔÚplayersÖĞ.
 		if (r == this)
 		{
 			continue;
@@ -54,13 +75,15 @@ bool GameRole::Init()
 
 		auto role = dynamic_cast<GameRole*>(r);
 
-		// å½“å‰ç©å®¶å‡ºç”Ÿçš„æ¶ˆæ¯å‘é€ç»™å…¶ä»–ç©å®¶
+		// µ±Ç°Íæ¼Ò³öÉúµÄÏûÏ¢·¢ËÍ¸øÆäËûÍæ¼Ò
+		// ÏûÏ¢·¢µ½mProtocolºó,mProtocolºóÃæµÄ´¦ÀíÕßÊÇmChannel
 		pMsg = MakeInitPosBroadcast();
 		ZinxKernel::Zinx_SendOut(*pMsg, *role->mProtocol);
 
-		// å°†ä»–äººçš„å‡ºç”Ÿä¿¡æ¯å‘ŠçŸ¥è‡ªå·±
-		pMsg = role->MakeInitPosBroadcast();
-		ZinxKernel::Zinx_SendOut(*pMsg, *mProtocol);
+		// ½«ËûÈËµÄ³öÉúĞÅÏ¢¸æÖª×Ô¼º,ÕâÀïµÄËûÈË¾ÍÊÇrole, ¶øthis²ÅÊÇ×Ô¼º
+		// ·şÎñÆ÷²»ÔÙ½«ÆäËûÍæ¼ÒµÄÎ»ÖÃĞÅÏ¢ Ò»´ÎÒ»¸öµÄ·¢ËÍ¸øµ±Ç°Íæ¼Ò
+		//pMsg = role->MakeInitPosBroadcast();
+		//ZinxKernel::Zinx_SendOut(*pMsg, *mProtocol);
 	}
 
 	return true;
@@ -71,7 +94,7 @@ bool GameRole::Init()
 
 UserData * GameRole::ProcMsg(UserData & _poUserData)
 {
-	// msgé‡Œçš„m_MsgListå­˜å‚¨çš„æ˜¯å·²ç»ååºåˆ—åŒ–çš„protobufå¯¹è±¡
+	// msgÀïµÄm_MsgList´æ´¢µÄÊÇÒÑ¾­·´ĞòÁĞ»¯µÄprotobuf¶ÔÏó
 	GameMsg &msg = dynamic_cast<GameMsg&>(_poUserData);
 
 	for (auto single : msg.m_MsgList)
@@ -79,17 +102,62 @@ UserData * GameRole::ProcMsg(UserData & _poUserData)
 		switch (single->m_MsgType)
 		{
 		case GameSingleTLV::GAME_MSG_NEW_POSTION:
+		{
 			auto pbMsg = dynamic_cast<pb::Position*>(single->m_poGameMsg);
 
+			/*
 			std::cout << "x=" << pbMsg->x() << " "
 				<< "y=" << pbMsg->y() << " "
 				<< "z=" << pbMsg->z() << " "
 				<< "v=" << pbMsg->v() << " "
 				<< std::endl;
+			*/
 
-			// å½“å‰ç©å®¶æŠŠæ–°çš„ä½ç½®åæ ‡å‘é€ç»™å…¶ä»–å®¢æˆ·ç«¯
+			// µ±Ç°Íæ¼Ò°ÑĞÂµÄÎ»ÖÃ×ø±ê·¢ËÍ¸øÆäËû¿Í»§¶Ë
 			this->ProcNewPosition(pbMsg->x(), pbMsg->y(), pbMsg->z(), pbMsg->v());
 			break;
+		}
+
+		// ·şÎñÆ÷ÔÚÕâÀïÄÃµ½¿Í»§¶ËÍæ¼ÒµÄÁÄÌìĞÅÏ¢ 
+		case GameSingleTLV::GAME_MSG_TALK_CONTENT:
+		{
+			// singleÀïÃæµÄmpoGameMsg ´æ´¢ÁËÒÑ¾­·´ĞòÁĞ»¯µÄ¿Í»§¶ËµÄ·¢À´µÄÏûÏ¢
+			auto pbMsg = dynamic_cast<pb::Talk*>(single->m_poGameMsg);
+
+			this->ProcTalkContent(pbMsg->content());
+			break;
+		}
+
+		// ·şÎñÆ÷ÔÚÕâÀïÄÃµ½¿Í»§¶Ë´«À´µÄÔ­ÊÀ½çIdºÍĞÂÊÀ½çId
+		case GameSingleTLV::GAME_MSG_CHANGE_WORLD:
+		{
+			auto pbMsg = dynamic_cast<pb::ChangeWorldRequest*>(single->m_poGameMsg);
+			this->ProcChangeWorld(pbMsg->srcid(), pbMsg->targetid());
+			break;
+		}
+
+		// ·şÎñÆ÷ÔÚÕâÀïÄÃµ½¼¼ÄÜÃüÖĞµÄĞÅÏ¢
+		case GameSingleTLV::GAME_MSG_SKILL_CONTACT:
+		{
+			auto pbMsg = dynamic_cast<pb::SkillContact*>(single->m_poGameMsg);
+			cout << "SrcPid: " << pbMsg->srcpid()
+				<< " TargetPid: "	<< pbMsg->targetpid()
+				<< " SkillId: " << pbMsg->skillid()
+				<< " BulletId: " << pbMsg->bulletid() << endl;
+			this->ProcSkillContact(pbMsg);
+			break;
+		}
+        
+		// ·şÎñÆ÷ÔÚÕâÀïÄÃµ½¼¼ÄÜ´¥·¢µÄĞÅÏ¢
+		case GameSingleTLV::GAME_MSG_SKILL_TRIGGER:
+		{
+			//¿Í»§¶Ë´¥·¢ÁË¼¼ÄÜ
+			auto pbMsg = dynamic_cast<pb::SkillTrigger*>(single->m_poGameMsg);
+			this->ProcSkillTrigger(pbMsg);
+			break;
+		}
+
+
 		}
 	}
 
@@ -102,21 +170,34 @@ UserData * GameRole::ProcMsg(UserData & _poUserData)
 
 void GameRole::Fini()
 {
-	//å½“å‰ç©å®¶ä¸‹çº¿çš„æ—¶å€™ï¼Œè¿™ä¸ªå‡½æ•°è¢«è°ƒç”¨,åœ¨è¿™é‡Œå®ç°ä¸‹çº¿é€»è¾‘
-	//è·å–æ‰€æœ‰çš„ç©å®¶
-	auto players = ZinxKernel::Zinx_GetAllRole();
+
+	std::cout << std::endl;
+	std::cout << "--------------------down------------------" << std::endl;
+	std::cout << "&&&&&&&&&&&&&&&&&&&&down&&&&&&&&&&&&&&&&&&&&" << std::endl;
+	std::cout << std::endl;
+	//µ±Ç°Íæ¼ÒÏÂÏßµÄÊ±ºò£¬Õâ¸öº¯Êı±»µ÷ÓÃ,ÔÚÕâÀïÊµÏÖÏÂÏßÂß¼­
+	//»ñÈ¡ËùÓĞµÄÍæ¼Ò
+	//auto players = ZinxKernel::Zinx_GetAllRole();
+
+	//»ñÈ¡Íæ¼ÒÖÜÎ§µÄËùÓĞÍæ¼Ò
+	auto players = mCurrentWorld->GetSurPlayers(this);
 
 	for (auto &r : players)
 	{
 		if (r == this)
+		{
 			continue;
+		}
 
 		auto role = dynamic_cast<GameRole*>(r);
-		//ç”Ÿæˆç©å®¶ä¸‹çº¿æ¶ˆæ¯(æ­¤å¤„éœ€è¦æ¯ä¸€æ¬¡é‡æ–°åˆ›å»ºç©å®¶ä¸‹çº¿æ¶ˆæ¯)
+		//Éú³ÉÍæ¼ÒÏÂÏßÏûÏ¢(´Ë´¦ĞèÒªÃ¿Ò»´ÎÖØĞÂ´´½¨Íæ¼ÒÏÂÏßÏûÏ¢)
 		auto pMsg = MakeLogoffSyncPid();
 
 		ZinxKernel::Zinx_SendOut(*pMsg, *role->mProtocol);
 	}
+
+	//´Óµ±Ç°ÓÎÏ·ÊÀ½çÖĞÒÆ³ıµ±Ç°Íæ¼Ò
+	mCurrentWorld->DelPlayer(this);
 }
 
 
@@ -125,7 +206,7 @@ GameMsg* GameRole::MakeLogonSyncPid()
 {
 	auto pbMsg = new SyncPid;
 
-	// pbMsgç”¨äºæ„é€ GameSingleTLVçš„å¯¹è±¡,ç”¨äºåºåˆ—åŒ– 
+	// pbMsgÓÃÓÚ¹¹ÔìGameSingleTLVµÄ¶ÔÏó,ÓÃÓÚĞòÁĞ»¯ 
 	pbMsg->set_pid(this->mPlayerId);
 	pbMsg->set_username(this->mPlayerName);
 
@@ -139,14 +220,41 @@ GameMsg* GameRole::MakeLogonSyncPid()
 
 
 
+// ÏÈĞòÁĞ»¯ÁÄÌìĞÅÏ¢,ÔÚ·¢¸øËùÓĞÆäËûÔÚÏßÍæ¼Ò
+GameMsg * GameRole::MakeTalkBroadcast(std::string _talkContent)
+{
+	auto pbMsg = new BroadCast;
+
+	pbMsg->set_pid(this->mPlayerId);
+	/*¸ù¾İTp²»Í¬£¬BroadCastÏûÏ¢»á°üº¬£º
+	  1 ÁÄÌìÄÚÈİ£¨Content£©
+	  2 ³õÊ¼Î»ÖÃ(P)
+	  4 ĞÂÎ»ÖÃP
+	  */
+	pbMsg->set_tp(1);
+	pbMsg->set_username(this->mPlayerName);
+
+	pbMsg->set_content(_talkContent);
+
+	GameSingleTLV *tlv = new GameSingleTLV(GameSingleTLV::GAME_MSG_BROADCAST, pbMsg);
+
+	GameMsg *retMsg = new GameMsg;
+
+	retMsg->m_MsgList.push_back(tlv);
+
+	return retMsg;
+}
+
+
+
 GameMsg * GameRole::MakeInitPosBroadcast()
 {
-	// IDå’Œå§“å
+	// IDºÍĞÕÃû
 	auto pbMsg = new BroadCast;
 	pbMsg->set_pid(this->mPlayerId);
 	pbMsg->set_username(this->mPlayerName);
 
-	// ä½ç½®ä¿¡æ¯
+	// Î»ÖÃĞÅÏ¢
 	pbMsg->set_tp(2);
 	auto pos = pbMsg->mutable_p();
 	pos->set_x(x);
@@ -164,9 +272,9 @@ GameMsg * GameRole::MakeInitPosBroadcast()
 
 
 
-// ç©å®¶æ–°ä½ç½®çš„å¹¿æ’­
-// æ³¨æ„:ç©å®¶çš„æ–°ä½ç½®æ˜¯å®¢æˆ·ç«¯å‘è¿‡æ¥çš„
-// æœåŠ¡å™¨æŠŠæ­¤ç©å®¶çš„æ–°ä½ç½®å¹¿æ’­å‡ºå»
+// Íæ¼ÒĞÂÎ»ÖÃµÄ¹ã²¥
+// ×¢Òâ:Íæ¼ÒµÄĞÂÎ»ÖÃÊÇ¿Í»§¶Ë·¢¹ıÀ´µÄ
+// ·şÎñÆ÷°Ñ´ËÍæ¼ÒµÄĞÂÎ»ÖÃÏÈĞòÁĞ»¯,ÔÙ·¢¸øÆäËûËùÓĞÔÚÏßÍæ¼Ò
 GameMsg * GameRole::MakeNewPosBroadcast()
 {
 	auto pbMsg = new BroadCast;
@@ -174,10 +282,10 @@ GameMsg * GameRole::MakeNewPosBroadcast()
 	pbMsg->set_pid(this->mPlayerId);
 	pbMsg->set_username(this->mPlayerName);
 
-	/*æ ¹æ®Tpä¸åŒï¼ŒBroadCastæ¶ˆæ¯ä¼šåŒ…å«ï¼š
-	  1 èŠå¤©å†…å®¹ï¼ˆContentï¼‰
-	  2 åˆå§‹ä½ç½®(P)
-	  4 æ–°ä½ç½®P
+	/*¸ù¾İTp²»Í¬£¬BroadCastÏûÏ¢»á°üº¬£º
+	  1 ÁÄÌìÄÚÈİ£¨Content£©
+	  2 ³õÊ¼Î»ÖÃ(P)
+	  4 ĞÂÎ»ÖÃP
 	*/
 	pbMsg->set_tp(4);
 	auto pos = pbMsg->mutable_p();
@@ -195,7 +303,9 @@ GameMsg * GameRole::MakeNewPosBroadcast()
 }
 
 
-/*åˆ›å»ºä¸‹çº¿æ—¶çš„idå’Œå§“åæ¶ˆæ¯*/
+/*´´½¨ÏÂÏßÊ±µÄidºÍĞÕÃûÏûÏ¢*/
+// ÕâÒ»²½µÄ×÷ÓÃ²¢²»ÊÇÖ±½Ó°ÑÍæ¼ÒÉ¾³ı,¾ßÌåÔõÃ´É¾³ı¿ÉÄÜÊÇ¿Í»§¶ËµÄÊµÏÖ
+// ÕâÀïÖ»ÊÇ°ÑÒªÏÂÏß»òÀë¿ªµ±Ç°¸ñ×ÓµÄÍæ¼ÒµÄĞÅÏ¢ĞòÁĞ»¯,×¼±¸·¢ËÍ¸øÆäËûÍæ¼Ò
 GameMsg* GameRole::MakeLogoffSyncPid()
 {
 	auto pbMsg = new SyncPid;
@@ -212,26 +322,408 @@ GameMsg* GameRole::MakeLogoffSyncPid()
 
 
 
+// »ñÈ¡ÖÜÎ§Íæ¼ÒĞÅÏ¢,·ÅÈëÊı×éÖĞÒ»´ÎĞÔ·¢ËÍ,±ÜÃâ¶à´Î·¢ËÍ
+GameMsg * GameRole::MakeSurPlays()
+{
+	auto pbMsg = new SyncPlayers;
+
+	//»ñÈ¡ÖÜ±ßËùÓĞµÄÍæ¼Ò
+	auto players = mCurrentWorld->GetSurPlayers(this);
+
+
+	for (auto r : players)
+	{
+		GameRole *role = dynamic_cast<GameRole*>(r);
+
+		auto p = pbMsg->add_ps();
+
+		p->set_pid(role->mPlayerId);
+		p->set_username(role->mPlayerName);
+
+		// »ñµÃ×Ó¶ÔÏópos
+		auto pos = p->mutable_p();
+		// ÉèÖÃ×Ó¶ÔÏó
+		pos->set_x(role->x);
+		pos->set_y(role->y);
+		pos->set_z(role->z);
+		pos->set_v(role->v);
+		pos->set_bloodvalue(role->hp);
+	}
+
+	GameSingleTLV *tlv = new GameSingleTLV(GameSingleTLV::GAME_MSG_SUR_PLAYER, pbMsg);
+
+	GameMsg *retMsg = new GameMsg;
+
+	retMsg->m_MsgList.push_back(tlv);
+
+	return retMsg;
+}
+
+
+
+// Îª¿Í»§¶Ë×¼±¸ÇĞ»»ÊÀ½çºóµÄĞÕÃû/Î»ÖÃ/HP,È»ºóĞòÁĞ»¯ÒÔ±¸·¢ËÍ¸ø¿Í»§¶Ë
+GameMsg * GameRole::MakeChangeWorldResponse(int srcId, int targetId)
+{
+
+	auto pbMsg = new ChangeWorldResponse;
+
+	pbMsg->set_pid(this->mPlayerId);
+	//ÇĞ»»³É¹¦·µ»Ø1
+	pbMsg->set_changeres(1);
+	pbMsg->set_srcid(srcId);
+	pbMsg->set_targetid(targetId);
+
+	//Íæ¼Ò³õÊ¼³öÉúµã
+	auto pos = pbMsg->mutable_p();
+	pos->set_bloodvalue(hp);
+	pos->set_x(x);
+	pos->set_y(y);
+	pos->set_z(z);
+	pos->set_v(v);
+
+	auto single = new GameSingleTLV(GameSingleTLV::GAME_MSG_CHANGE_WORLD_RESPONSE, pbMsg);
+	auto retMsg = new GameMsg;
+	retMsg->m_MsgList.push_back(single);
+
+	return retMsg;
+}
+
+
+
+// ĞòÁĞ»¯¼¼ÄÜÏûÏ¢,ÒÔ´ı·µ»Ø¸ø¿Í»§¶Ë
+GameMsg * GameRole::MakeSkillTrigger(pb::SkillTrigger * trigger)
+{
+	auto *pbMsg = new SkillTrigger(*trigger);
+
+	GameSingleTLV *tlv = new GameSingleTLV(GameSingleTLV::GAME_MSG_SKILL_BROAD, pbMsg);
+
+	GameMsg *retMsg = new GameMsg;
+
+	retMsg->m_MsgList.push_back(tlv);
+
+	return retMsg;
+}
+
+
+
+// ¼¼ÄÜÃüÖĞĞòÁĞ»¯,×¼±¸·µ»Ø¸ø¿Í»§¶Ë
+GameMsg * GameRole::MakeSkillContact(pb::SkillContact * contact)
+{
+	auto *pbMsg = new SkillContact(*contact);
+
+	GameSingleTLV *tlv = new GameSingleTLV(GameSingleTLV::GAME_MSG_SKILL_CONTACT_BROAD, pbMsg);
+
+	GameMsg *retMsg = new GameMsg;
+
+	retMsg->m_MsgList.push_back(tlv);
+
+	return retMsg;
+}
+
+
+
 void GameRole::ProcNewPosition(float _x, float _y, float _z, float _v)
 {
-      this->x=_x;
-      this->y=_y;
-      this->z=_z;
-      this->v=_v;
+	//ÅĞ¶ÏÍæ¼ÒÒÆ¶¯µÄ¹ı³ÌÖĞÊÇ·ñ¿ç¸ñ×Ó
+	if (mCurrentWorld->GridChanged(this, _x, _y))
+	{
+		//»ñÈ¡µ±Ç°Íæ¼ÒÖÜÎ§Íæ¼Ò
+		std::list<AOI_Player*> oldList = mCurrentWorld->GetSurPlayers(this);
 
-	  auto players = ZinxKernel::Zinx_GetAllRole();
+		//´Óµ±Ç°¸ñ×ÓÖĞÒÆ³ıµ±Ç°Íæ¼Ò
+		mCurrentWorld->DelPlayer(this);
+		this->x = _x;
+		this->y = _y;
+		this->z = _z;
+		this->v = _v;
 
-	  for (auto &r : players)
-	  {
-		  if (r == this)
-		  {
-			  continue;    //  ç›´æ¥è¿”å›forå¾ªç¯
-		  }
+		//Ìí¼ÓÍæ¼Òµ½¸ñ×ÓÖĞ
+		mCurrentWorld->AddPlayer(this);
 
-		  auto role = dynamic_cast<GameRole*>(r);
-		  auto pMsg = MakeNewPosBroadcast();
+		//»ñÈ¡µ±Ç°Íæ¼ÒÖÜÎ§µÄÍæ¼Ò
+		std::list<AOI_Player*> newList = mCurrentWorld->GetSurPlayers(this);
 
-		  ZinxKernel::Zinx_SendOut(*pMsg, *role->mProtocol);
-	  }
-    
+		//ÊÓÒ°ÏûÊ§
+		this->ViewDisappear(oldList, newList);
+
+		//ÊÓÒ°³öÏÖ
+		this->ViewAppear(oldList, newList);
+	}
+
+	//µ±Íæ¼ÒÒÆ¶¯µÄÊ±ºò»áÊÕµ½ÒÆ¶¯ÏûÏ¢
+	this->x = _x;
+	this->y = _y;
+	this->z = _z;
+	this->v = _v;
+
+	//»ñÈ¡ËùÓĞµÄÍæ¼Ò
+	//auto players = ZinxKernel::Zinx_GetAllRole();
+	//»ñÈ¡ÖÜÎ§Íæ¼Ò
+	auto players = mCurrentWorld->GetSurPlayers(this);
+
+	for (auto &r : players)
+	{
+		if (r == this)
+			continue;
+
+		auto role = dynamic_cast<GameRole*>(r);
+		//Éú³ÉÍæ¼ÒÏÂÏßÏûÏ¢
+		auto pMsg = MakeNewPosBroadcast();
+
+		ZinxKernel::Zinx_SendOut(*pMsg, *role->mProtocol);
+	}
+
+}
+
+void GameRole::ProcTalkContent(std::string content)
+{
+	//·şÎñ¶ËÊÕµ½¿Í»§¶ËÁÄÌìµÄÄÚÈİÖ®ºó£¬Ó¦¸Ã¹ã²¥¸øËùÓĞÆäËüÍæ¼Ò
+	auto players = ZinxKernel::Zinx_GetAllRole();
+
+	for (auto r : players)
+	{
+	   /*  Èç¹û¼ÓÉÏÕâ¾ä,×Ô¼º¾ÍÎŞ·¨¿´µ½×Ô¼ºµÄÁÄÌìÏûÏ¢ÁË
+		if (r == this)
+		{
+			continue;
+		}
+		*/
+		GameRole *role = dynamic_cast<GameRole*>(r);
+
+		auto pMsg = MakeTalkBroadcast(content);
+
+		ZinxKernel::Zinx_SendOut(*pMsg, *role->mProtocol);
+	}
+}
+
+
+
+// °Ñ·şÎñÆ÷×¼±¸ºÃµÄĞÂÊÀ½çÏûÏ¢·¢¸ø¿Í»§¶Ë 
+// ÏÈ·¢¸ø·şÎñÆ÷×Ô¼ºµÄGameProtocol²ã,ÔÙÍ¨¹ıGameChannel·¢ËÍ¸ø¿Í»§¶Ë
+// srcIdºÍtargetWorldId ÊÇ¿Í»§¶Ë´«À´µÄÔ­ÊÀ½çIdºÍĞÂÊÀ½çId
+void GameRole::ProcChangeWorld(int srcId, int targetWorldId)
+{
+	//µ±Ç°AOIÊÀ½çÒª½øĞĞÇĞ»»
+	//ÏÂÏßµ±Ç°AOIÊÀ½ç
+	mCurrentWorld->DelPlayer(this);
+
+	//¸æËßÖÜ±ßÍæ¼ÒÎÒÏÂÏßÁË
+	auto players = mCurrentWorld->GetSurPlayers(this);
+	for (auto &r : players)
+	{
+		if (this == r)
+		{
+			continue;
+		}
+
+		auto role = dynamic_cast<GameRole*>(r);
+		auto pMsg = MakeLogoffSyncPid();
+		ZinxKernel::Zinx_SendOut(*pMsg, *role->mProtocol);
+	}
+
+
+	//²úÉúÒ»¸öËæ»ú³öÉúµãÎ»ÖÃ
+	if (1 == targetWorldId)
+	{
+		x = 100 + (g_rand_engine() % 20);
+		y = 0;
+		z = 100 + (g_rand_engine() % 20);
+		v = 0;
+		hp = 1000;
+	}
+
+	if (2 == targetWorldId)
+	{
+		//Õ½¶·³¡¾°µÄÇø¼äx[0, 140] z[0, 140]
+		//×îºó¿ØÖÆ³öÉúµãÔÚ10-130Ö®¼ä¼´¿É
+		x = 10 + g_rand_engine() % 120;
+		y = 0;
+		z = 10 + g_rand_engine() % 120;
+	}
+
+	//ÉÏÏßĞÂµÄAOIÊÀ½ç
+	mCurrentWorld = WorldManager::GetInstance().GetWorld(targetWorldId);
+	mCurrentWorld->AddPlayer(this);
+	players = mCurrentWorld->GetSurPlayers(this);
+	for (auto &r : players)
+	{
+		if (this == r)
+		{
+			continue;
+		}
+
+		auto role = dynamic_cast<GameRole*>(r);
+		auto pMsg = MakeInitPosBroadcast();
+		ZinxKernel::Zinx_SendOut(*pMsg, *role->mProtocol);
+	}
+
+	// ·şÎñÆ÷¸æÖªµ±Ç°Íæ¼ÒÔÚĞÂÊÀ½çµÄÎ»ÖÃµÈĞÅÏ¢
+	auto pMsg = MakeChangeWorldResponse(srcId, targetWorldId);
+	ZinxKernel::Zinx_SendOut(*pMsg, *mProtocol);
+
+	//¸æËß×Ô¼ºĞÂµÄ³¡¾°ÖÜ±ßÓĞÊ²Ã´Íæ¼Ò
+	pMsg = MakeSurPlays();
+	ZinxKernel::Zinx_SendOut(*pMsg, *mProtocol);
+}
+
+
+
+// °Ñ¼¼ÄÜÏûÏ¢·¢¸øÆäËûÍæ¼Ò
+void GameRole::ProcSkillTrigger(pb::SkillTrigger * trigger)
+{
+	if (trigger->pid() != this->mPlayerId)
+	{
+		return;
+	}
+
+	//»ñÈ¡ÖÜÎ§Íæ¼Ò
+	auto players = mCurrentWorld->GetSurPlayers(this);
+	for (auto r : players)
+	{
+		GameRole *role = dynamic_cast<GameRole*>(r);
+
+		if (role == this)
+		{
+			continue;
+		}
+
+		auto pMsg = MakeSkillTrigger(trigger);
+		ZinxKernel::Zinx_SendOut(*pMsg, *role->mProtocol);
+	}
+}
+
+
+
+// ¼¼ÄÜÃüÖĞºóµÄ´¦Àí
+void GameRole::ProcSkillContact(pb::SkillContact * contact)
+{
+	int targetId = contact->targetpid();
+
+	//cout << "srcId: " << contact->srcpid() << " targetId: " << contact->targetpid() << endl;
+
+	if (this->mPlayerId != contact->srcpid())
+	{
+		return;
+	}
+
+
+
+	GameRole *targetRole = nullptr;
+	auto players = mCurrentWorld->GetSurPlayers(this);
+
+	for (auto r : players)
+	{
+		auto role = dynamic_cast<GameRole*>(r);
+		if (role->mPlayerId == targetId)
+		{
+			targetRole = role;
+			cout << "»÷ÖĞÍæ¼Ò " << role->mPlayerId << endl;
+			break;
+		}
+	}
+
+	if (nullptr == targetRole)
+	{
+		return;
+	}
+
+	//¼ÆËãÊÜÉËº¦µÄÖµ
+	int attackHp = 300 +  g_rand_engine() % 300;
+	targetRole->hp -= attackHp;
+
+	//auto tmpContactMsg = new SkillContact(*contact);
+
+	//¼ÌĞø¹ã²¥¸øËùÓĞµÄÍæ¼Ò
+	auto pos = contact->mutable_contactpos();
+	pos->set_bloodvalue(targetRole->hp);
+
+	cout << "ÑªÁ¿: " << pos->bloodvalue() << endl;
+
+	players = mCurrentWorld->GetSurPlayers(this);
+
+	for (auto r : players)
+	{
+		auto role = dynamic_cast<GameRole*>(r);
+
+		auto pMsg = MakeSkillContact(contact);
+		//·¢ËÍÏûÏ¢¸øËùÓĞµÄÍæ¼Ò
+		ZinxKernel::Zinx_SendOut(*pMsg, *role->mProtocol);
+	}
+
+
+	if (targetRole->hp <= 0)
+	{
+		targetRole->ProcChangeWorld(targetRole->mCurrentWorld->mWorldId, 1);
+	}
+}
+
+
+int GameRole::GetX()
+{
+	return x;
+}
+
+//ÈıÎ¬×ø±êÖĞµÄZÏàµ±ÓÚ¶şÎ¬ÖĞY
+int GameRole::GetY()
+{
+	return z;
+}
+
+
+
+// ÊÓÒ°ÏûÊ§
+void GameRole::ViewDisappear(std::list<AOI_Player*>& oldList, std::list<AOI_Player*>& newList)
+{
+	//Ë¼Â· ¾ÉµÄÖÜÎ§Íæ¼Ò¼¯ºÏ - ĞÂµÄÖÜÎ§Íæ¼Ò¼¯ºÏ = A
+	vector<AOI_Player*> diff;
+
+	vector<AOI_Player*> oldVec(oldList.begin(), oldList.end());
+	vector<AOI_Player*> newVec(newList.begin(), newList.end());
+
+	//ÅÅĞò
+	sort(oldVec.begin(), oldVec.end());
+	sort(newVec.begin(), newVec.end());
+
+	//¼ÆËã²î¼¯ oldVec - newVec
+	set_difference(oldVec.begin(), oldVec.end(), newVec.begin(), newVec.end(), inserter(diff, diff.begin()));
+
+	for (auto &it : diff)
+	{
+		GameRole *role = dynamic_cast<GameRole*>(it);
+
+		auto pbMsg = MakeLogoffSyncPid();
+		ZinxKernel::Zinx_SendOut(*pbMsg, *role->mProtocol);
+
+		pbMsg = role->MakeLogoffSyncPid();
+		ZinxKernel::Zinx_SendOut(*pbMsg, *mProtocol);
+	}
+}
+
+
+// ÊÓÒ°³öÏÖ
+void GameRole::ViewAppear(std::list<AOI_Player*>& oldList, std::list<AOI_Player*>& newList)
+{
+	//Ë¼Â· ĞÂµÄÖÜÎ§Íæ¼Ò¼¯ºÏ - ¾ÉµÄÖÜÎ§Íæ¼Ò¼¯ºÏ = A
+	vector<AOI_Player*> diff;
+
+	vector<AOI_Player*> oldVec(oldList.begin(), oldList.end());
+	vector<AOI_Player*> newVec(newList.begin(), newList.end());
+
+	//ÅÅĞò
+	sort(oldVec.begin(), oldVec.end());
+	sort(newVec.begin(), newVec.end());
+
+	//¼ÆËã²î¼¯ newVec - oldVec
+	set_difference(newVec.begin(), newVec.end(), oldVec.begin(), oldVec.end(), inserter(diff, diff.begin()));
+
+	for (auto &it : diff)
+	{
+		GameRole *role = dynamic_cast<GameRole*>(it);
+
+		auto pbMsg = MakeInitPosBroadcast();
+		ZinxKernel::Zinx_SendOut(*pbMsg, *role->mProtocol);
+
+		pbMsg = role->MakeInitPosBroadcast();
+		ZinxKernel::Zinx_SendOut(*pbMsg, *mProtocol);
+	}
 }

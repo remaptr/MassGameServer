@@ -25,6 +25,7 @@ public:
 };
 #endif
 
+/*
 GameMsg *pmsg = new GameMsg;
 Iprotocol *pro = new GameProtocol;
 
@@ -32,14 +33,18 @@ void test()
 {
   ZinxKernel::Zinx_SendOut(*pmsg, *pro);
 }
+*/
+
 
 int main()
 {
 	StdoutChannel* out=new StdoutChannel;
 	ZinxTimer* time=new ZinxTimer;
 
+
+	// 定时器暂时关闭
 	//TimeProc proc;
-//	ZinxTimerDeliver::GetInstance().RegisterProcObject(proc);
+	//ZinxTimerDeliver::GetInstance().RegisterProcObject(proc);
 
 	ZinxTCPListen* tcp = new ZinxTCPListen(10086, new GameChannelFactory);
 

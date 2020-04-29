@@ -2,16 +2,18 @@
 #include"GameMsg.h"
 #include"GameProtocol.h"
 #include<random>
-
+#include"AOI_World.h"
+#include<algorithm>
+#include"RandomName.h"
+#include"WorldManager.h"
+using namespace std;
 
 class GameChannel;
 class GameProtocol;
 
 
-class GameRole : public Irole
+class GameRole : public Irole ,public AOI_Player
 {
-private:
-	static int smRoleCount;
 
 public:
 	GameRole();
@@ -61,11 +63,12 @@ void ProcSkillContact(pb::SkillContact *contact);
 
 
 public:
+	static int smRoleCount;
 	GameProtocol *mProtocol=nullptr;
 	GameChannel *mChannel=nullptr;
 
     // 玩家ID
-	int mPlayerId;           
+	int mPlayerId = -1;
 
 	// 玩家姓名
 	std::string mPlayerName;
@@ -79,5 +82,17 @@ public:
 
 	// 玩家血量
 	int hp;
+
+	// 通过 AOI_Player 继承
+	virtual int GetX() override;
+	virtual int GetY() override;
+
+	//处理AOI视野消失
+	void ViewDisappear(std::list<AOI_Player*> &oldList, std::list<AOI_Player*> &newList);
+	//处理AOI视野出现
+	void ViewAppear(std::list<AOI_Player*> &oldList, std::list<AOI_Player*> &newList);
+
+
+	AOI_World* mCurrentWorld = nullptr;
 };
 

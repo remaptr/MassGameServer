@@ -220,6 +220,7 @@ void ZinxKernel::Zinx_Run()
 	poZinxKernel->Run();
 }
 
+// SendOut内部自动将消息方向自动改为OUT
 void ZinxKernel::Zinx_SendOut(UserData& _oUserData, Iprotocol & _oProto)
 {
 	SysIOReadyMsg iodic = SysIOReadyMsg(SysIOReadyMsg::OUT);
@@ -232,6 +233,7 @@ void ZinxKernel::Zinx_SendOut(UserData& _oUserData, Iprotocol & _oProto)
 
 
 
+// SendOut内部自动将消息方向自动改为OUT
 void ZinxKernel::Zinx_SendOut(std::string & szBytes, Ichannel & _oChannel)
 {
 	SysIOReadyMsg iodic = SysIOReadyMsg(SysIOReadyMsg::OUT);

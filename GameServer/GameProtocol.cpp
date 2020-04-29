@@ -13,7 +13,7 @@ GameProtocol::~GameProtocol()
 
 
 
-// 解决粘包 丢包问题
+// 解决粘包 丢包问题, 反序列化并储存到容器中
 UserData * GameProtocol::raw2request(std::string _szInput)
 {
 	int msgLen = 0;
@@ -49,6 +49,7 @@ UserData * GameProtocol::raw2request(std::string _szInput)
 			cout << "msgLen::" << msgLen << " " << "msgId::" << msgId << " " << "msgContent::" << msgContent << endl;
 
 			// 在这里反序列化的目的是啥呢? 是为了在角色层直接拿到解析后的数据.
+			// 在这里拿到客户端的消息内容,并储存到反序列化protobuf对象中
 	 	GameSingleTLV* tlv = new GameSingleTLV((GameSingleTLV::GameMsgType)msgId, msgContent);
 	    
 		if (nullptr == retMsg)
